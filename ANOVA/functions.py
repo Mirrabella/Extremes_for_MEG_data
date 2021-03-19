@@ -143,7 +143,7 @@ def max_beta_and_time_for_max(subjects, data_path, planar, tmin, tmax):
 #102 - amount of combined planars
 
 
-def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, hand, condition):
+def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, hand, condition, hemisphere):
     min_array, min_time_array = min_beta_and_time_for_min(subjects, data_path, planar, tmin = tmin, tmax = tmax)
 
     max_array, max_time_array = max_beta_and_time_for_max(subjects, data_path, planar, tmin = tmin, tmax = tmax)
@@ -164,7 +164,7 @@ def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, 
     #Усредняем по каналам
     min_ave = np.mean(min_three_chan, axis = 0).tolist()
     
-    ###################MAXIMUM ####################
+    ################### MAXIMUM ####################
     max_three_chan = [] # формируем список списков сотоящий из трех списков (сенсора), в каждом по 27 элементов (число испытуемых)
     for i in group_sensors:
         maximum = [] #для каждого из выбранных сенсоров выбираем максимум у для каждого испытуемого
@@ -180,11 +180,15 @@ def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, 
     max_ave = np.mean(max_three_chan, axis = 0).tolist()
     
     h = [hand]*len(max_ave) # делаем список с количество элеметов, равному количеству испытуемых для наименования руки
+    hemi = [hemisphere]*len(max_ave)
     
     сondit = [condition]*len(max_ave) #тоже что и предыдущее для кондищена
     
-    return(min_ave, max_ave, h, сondit)
-    
+    return(min_ave, max_ave, h, сondit, hemi)
+  
+  
+###### TABLE FOR TIMECOURSE ###############
+  
 def beta(subjects, data_path, planar, tmin, tmax): 
 #Make list of evoked
     all_evoked = []
