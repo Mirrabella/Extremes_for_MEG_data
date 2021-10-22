@@ -1,5 +1,3 @@
-# Подробности получения функции dataframe_for_anova и beta см. Подготовка_таблиц_ANOVA_and_timecourse.ipynb
-# Примеры использования функций min_beta_and_time_for_min и max_beta_and_time_for_max см. Compare_two_functions_ploting_topomaps with_extrems.ipynb
 import mne
 import os.path as op
 from matplotlib import pyplot as plt
@@ -8,17 +6,20 @@ from scipy import stats
 import copy
 import pandas as pd
 import statsmodels.stats.multitest as mul
+import os
 
 
 # We get an array with data for each subjects, and each sensor
 
 ############ MINIMUM ###############
 
-def min_beta_and_time_for_min(subjects, data_path, planar, tmin, tmax): 
+#def min_beta_and_time_for_min(subjects, data_path, planar, tmin, tmax, h): # for extremums_search
+def min_beta_and_time_for_min(subjects, data_path, planar, tmin, tmax):  # for ANOVA table
 #Make list of evoked
     all_evoked = []
     for subj in subjects:
-        data = op.join(data_path, planar.format(subj)) #If you need to make combine planar for beta, please use the combine_planar.py
+        #data = op.join(data_path, planar.format(subj, h)) # for extremums_search
+        data = op.join(data_path, planar.format(subj)) # for ANOVA table
         evk = mne.Evoked(data)
         all_evoked.append(evk)
 
@@ -72,11 +73,13 @@ def min_beta_and_time_for_min(subjects, data_path, planar, tmin, tmax):
 
 ############ MAXIMUM ###############
 
-def max_beta_and_time_for_max(subjects, data_path, planar, tmin, tmax): 
+#def max_beta_and_time_for_max(subjects, data_path, planar, tmin, tmax, h): # for extremums_search
+def max_beta_and_time_for_max(subjects, data_path, planar, tmin, tmax): # for ANOVA table
 #Make list of evoked
     all_evoked = []
     for subj in subjects:
-        data = op.join(data_path, planar.format(subj)) #If you need to make combine planar for beta, please use the combine_planar.py
+        #data = op.join(data_path, planar.format(subj, h)) # for extremums_search
+        data = op.join(data_path, planar.format(subj)) # for ANOVA table
         evk = mne.Evoked(data)
         all_evoked.append(evk)
 
@@ -143,10 +146,11 @@ def max_beta_and_time_for_max(subjects, data_path, planar, tmin, tmax):
 #102 - amount of combined planars
 
 
-def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, hand, condition, hemisphere):
-    min_array, min_time_array = min_beta_and_time_for_min(subjects, data_path, planar, tmin = tmin, tmax = tmax)
 
-    max_array, max_time_array = max_beta_and_time_for_max(subjects, data_path, planar, tmin = tmin, tmax = tmax)
+def dataframe_for_anova(subjects, data_path, planar, tmin_min, tmax_min, tmin_max, tmax_max, group_sensors, hand, condition, hemisphere):
+    min_array, min_time_array = min_beta_and_time_for_min(subjects, data_path, planar, tmin = tmin_min, tmax = tmax_min)
+
+    max_array, max_time_array = max_beta_and_time_for_max(subjects, data_path, planar, tmin = tmin_max, tmax = tmax_max)
     
     
     ################ MINIMUM ##################
@@ -187,35 +191,3 @@ def dataframe_for_anova(subjects, data_path, planar, tmin, tmax, group_sensors, 
     return(min_ave, max_ave, h, сondit, hemi)
   
   
-###### TABLE FOR TIMECOURSE ###############
-  
-def beta(subjects, data_path, planar, tmin, tmax): 
-#Make list of evoked
-    all_evoked = []
-    for subj in subjects:
-        data = op.join(data_path, planar.format(subj)) #If you need to make combine planar for beta, please use the combine_planar.py
-        evk = mne.Evoked(data)
-        all_evoked.append(evk)
-
-    #shift time scale if it is needed
-    #what the hell is going on here????????
-    #for i in all_evoked:
-    #   i.shift_time(-2.0, relative=False)
-
-# calculate average data for interval. You have to choose interval - downward, upward or susteined (look at the beggining of script)
-    interval = []
-    
-    for i in all_evoked:
-        x = i.crop(tmin=tmin, tmax=tmax)   #crop - mne function
-        interval.append(x.data)
-        
-    n = ((tmax*1000-tmin*1000)/(len(x.data[0])-1))/1000
-    
-    time = np.arange(tmin, (tmax + 0.001), n)
-    
-    
-        
-    return(interval, time) # возвращает список из 27 элементов (количество испытуемых), каждый элемент списка - np.array, содеражащая значение бета для каждого из 102 сенсоров
-
-
-
