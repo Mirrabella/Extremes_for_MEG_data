@@ -1,6 +1,7 @@
 
 import mne
 import os.path as op
+import os
 import numpy as np
 import pandas as pd
 
@@ -36,9 +37,9 @@ def make_beta_signal(subj, pref, data_path, L_freq, H_freq, f_step, period_start
 		
 	#read events
 	#events for baseline
-    events = read_events('/home/vtretyakova/Рабочий стол/corr_with_behavior/MEM_old/mark_of_stim/{0}_{1}_w_{2}.txt'.format(subj, pref[0], pref[1]))
+    events = read_events('/home/vtretyakova/Рабочий стол/speach_learn/MEM_old_new_baseline_swift/mark_of_stim/{0}_{1}_w_{2}.txt'.format(subj, pref[0], pref[1]))
 	#events for reaction, which we need
-    events_react = read_events('/home/vtretyakova/Рабочий стол/corr_with_behavior/MEM_old/mark_of_stim/{0}_{1}_r_{2}.txt'.format(subj, pref[0], pref[1]))
+    events_react = read_events('/home/vtretyakova/Рабочий стол/speach_learn/MEM_old_new_baseline_swift/mark_of_stim/{0}_{1}_r_{2}.txt'.format(subj, pref[0], pref[1]))
 	
 #epochs for baseline
     epochs = mne.Epochs(raw_data, events, event_id = None, tmin = -1.0, tmax = 1.0, picks = picks, preload = True)
@@ -87,37 +88,54 @@ def make_beta_signal(subj, pref, data_path, L_freq, H_freq, f_step, period_start
     
     freq_show.data = freq_show.data[:, :, np.newaxis, :]
     
+    # freq_show.data.shape - (28, 306, 1, 840) - epochs x channel x freq x time point
+    
     #33 is an arbitrary number. We have to set some frequency if we want to save the file
     freq_show.freqs = np.array([33])
 	
     comb_planar = combine_planar_Epoches_TFR(freq_show)
+    # comb_planar.data.shape - (28, 102, 1, 840) - epochs x channel x freq x time point
 
-    PreM = comb_planar.copy().crop(tmin=tmin[0], tmax=tmax[0])	    
+    PreM = comb_planar.copy().crop(tmin=tmin[0], tmax=tmax[0])
+    #PreM.data.shape - (28, 102, 1, 136) - epochs x channel x freq x time point	    
     M = comb_planar.copy().crop(tmin=tmin[1], tmax=tmax[1])   #crop - mne function	    
     PostM = comb_planar.copy().crop(tmin=tmin[2], tmax=tmax[2])
 
+    #averaging by time points
     mean_PreM  = PreM.data.mean(axis=-1)
+    #mean_PreM.shape - (28, 102, 1) - pochs x channel x freq
     mean_M  = M.data.mean(axis=-1)
     mean_PostM  = PostM.data.mean(axis=-1)
-
+    
+    # looking for extremes
+    min_PreM = np.min(PreM.data, axis = -1)
+    max_PostM = np.max(PostM.data, axis = -1)
+    #max_PostM.shape - (28, 102, 1) - pochs x channel x freq
+    
+    
+    # removing frequency axis
     mean_PreM_rsh = mean_PreM.reshape(28,102)
     mean_M_rsh = mean_M.reshape(28,102)
     mean_PostM_rsh = mean_PostM.reshape(28,102)
+    
+    min_PreM_rsh = min_PreM.reshape(28,102)
+    max_PostM_rsh = max_PostM.reshape(28,102)
+    
 
-    return (mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh)
+    return (mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, min_PreM_rsh, max_PostM_rsh)
 
 
 
-def make_subjects_df(subj, pref, mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, sensor_num):
+def make_subjects_df(subj, pref, mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, min_PreM_rsh, max_PostM_rsh, sensor_num):
 
-	events = read_events('/home/vtretyakova/Рабочий стол/corr_with_behavior/MEM_old/mark_of_stim/{0}_{1}_r_{2}.txt'.format(subj, pref[0], pref[1]))
+	events = read_events('/home/vtretyakova/Рабочий стол/speach_learn/MEM_old_new_baseline_swift/mark_of_stim/{0}_{1}_r_{2}.txt'.format(subj, pref[0], pref[1]))
 	events_list = []
 
 	for i in range(28):
 		a = events[i][2]
 		events_list.append(a)
 	    
-	RTs = np.loadtxt("/home/vtretyakova/Рабочий стол/corr_with_behavior/MEM_old/times/{1}_{2}/{0}_{1}_{2}.txt".format(subj, pref[0], pref[1], dtype='float'))
+	RTs = np.loadtxt("/home/vtretyakova/Рабочий стол/speach_learn/MEM_old_new_baseline_swift/times/{1}_{2}/{0}_{1}_{2}.txt".format(subj, pref[0], pref[1], dtype='float'))
 
 	RTs = RTs.tolist()
 	# Вычитаем лаг в 30 мс (задержка между меткой и тем, когда человек слышит сигнал)
@@ -126,7 +144,8 @@ def make_subjects_df(subj, pref, mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, sens
 	subject = [subj]*28
 
 	beta_power_PreM = []
-
+    
+    ############## mean beta power on interval ###############
 	for i in range(28):
 		a = mean_PreM_rsh[i][sensor_num]
 		beta_power_PreM.append(a)
@@ -142,8 +161,23 @@ def make_subjects_df(subj, pref, mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, sens
 	for i in range(28):
 		a = mean_PostM_rsh[i][sensor_num]
 		beta_power_PostM.append(a)
-	    
-	    
+
+    ############# Extremes ################
+
+	min_beta_PreM = []
+    #min_beta_PreM = []
+
+	for i in range(28):
+		a = min_PreM_rsh[i][sensor_num]
+		min_beta_PreM.append(a)
+
+	max_beta_PostM = []		
+    #max_beta_PostM = []
+
+	for i in range(28):
+		a = max_PostM_rsh[i][sensor_num]
+		max_beta_PostM.append(a)		
+		
 	    
 	df = pd.DataFrame()
 
@@ -151,6 +185,8 @@ def make_subjects_df(subj, pref, mean_PreM_rsh, mean_M_rsh, mean_PostM_rsh, sens
 	df['beta_power_PreM'] = beta_power_PreM
 	df['beta_power_M'] = beta_power_M
 	df['beta_power_PostM'] = beta_power_PostM
+	df['min_beta_PreM'] = min_beta_PreM
+	df['max_beta_PostM'] = max_beta_PostM
 	df['stimulus'] = events_list
 	df['RTs'] = RTs
 	df['subjects'] = subject
