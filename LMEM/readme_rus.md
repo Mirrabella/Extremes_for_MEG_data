@@ -31,5 +31,6 @@
 **LMEM_vs_Linear_regression_choose_sensor_for_LMEM_optimization.ipynb** — тот же смысл, что и selecting_sensors_LMEM_topomaps_for_extremes.ipynb, 
 но для среднего значения беты, а также дается сравнение выбора сенсора для оптимизации LMEM между full LMEM и LR
 
-**choose_sensor_scatterplots.R** - построение скатерплотов
+**choose_sensor_scatterplots.R** - построение скатерплотов  
+
 **Topomaps_for_Mixed_Effects_Model.ipynb** - построение топомапов по таблицам reg. coef. - p value
