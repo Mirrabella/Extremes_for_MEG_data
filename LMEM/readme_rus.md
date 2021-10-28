@@ -32,3 +32,4 @@
 но для среднего значения беты, а также дается сравнение выбора сенсора для оптимизации LMEM между full LMEM и LR
 
 **choose_sensor_scatterplots.R** - построение скатерплотов
+**Topomaps_for_Mixed_Effects_Model.ipynb** - построение топомапов по таблицам reg. coef. - p value
