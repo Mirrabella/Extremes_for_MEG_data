@@ -3,7 +3,7 @@ import mne
 import os.path as op
 import numpy as np
 import pandas as pd
-from functions_right_baseline import *
+from functions_LMEM import *
 
 L_freq = 15
 H_freq = 26
